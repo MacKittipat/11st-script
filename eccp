@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+
+import xml.etree.ElementTree as ET
+import glob
+import sys
+import os
+
+print('eccp - Eclipse classpath fixer')
+print('Dev by Mac')
+print(sys.version)
+print('----------------------------------------')
+
+# ----------------------------------------------------------------------------------------------------
+
+# Indent xml tag, http://stackoverflow.com/a/4590052
+def indent(elem, level=0):
+    i = "\n" + level*"    "
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "    "
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for elem in elem:
+            indent(elem, level+1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
+
+# ----------------------------------------------------------------------------------------------------
+
+# Config project path here
+base_path = '/hoem/mac/projectworkspace'
+project_names = [
+    'FirstProject',
+    'SecondProject'
+]
+
+# ----------------------------------------------------------------------------------------------------
+
+possible_lib_paths = [
+    'lib',
+    'webapps/WEB-INF/lib',
+    'WebContent/WEB-INF/lib'
+]
+classpath_name = '.classpath'
+
+# ----------------------------------------------------------------------------------------------------
+
+for project_name in project_names:
+    project_path = base_path + '/' + project_name
+    print(project_name + ' : Fixing .classpath in ' + project_path)
+
+    # Read Eclipse .classpath file
+    classpath_path = project_path + '/' + classpath_name
+    tree = ET.parse(classpath_path)
+    root = tree.getroot()
+
+    # Remove all lib tag
+    for node in root.findall('.//classpathentry[@kind="lib"]'):
+        root.remove(node)
+
+    # List all jar file in lib folder
+    for possible_lib_path in possible_lib_paths:
+        if os.path.isdir(project_path + '/' + possible_lib_path):
+            lib_path = project_path + '/' + possible_lib_path
+            print('  Adding lib from ' + lib_path + ' to .classpath')
+            for filename in glob.iglob(lib_path + '/**/*.jar', recursive=True):
+                # Append all jar file to .classpath file
+                lib_path = filename.replace(project_path + '/', '')
+                root.append((ET.fromstring('<classpathentry kind="lib" path="' + lib_path + '"/>')))
+
+    # Indent xml
+    indent(root)
+
+    # Save .classpath file
+    # print(ET.tostring(root))
+    tree.write(classpath_path)
+
+print('Done !')
