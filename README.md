@@ -27,7 +27,7 @@ eccp
 
 # gco
 
-Check out branch from multiple projects.
+Git check out to specific branch in multiple projects.
 
 ```
 gco ${BRACH_NAME}
